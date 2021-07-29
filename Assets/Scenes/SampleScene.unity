@@ -154,6 +154,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mapController: {fileID: 1575269814}
   _camera: {fileID: 963194227}
+  _state: 2
+  _startCoords:
+    _isInitialize: 0
+    _xIndex: 0
+    _yIndex: 0
+  _endCoords:
+    _isInitialize: 0
+    _xIndex: 0
+    _yIndex: 0
 --- !u!4 &219160450
 Transform:
   m_ObjectHideFlags: 0

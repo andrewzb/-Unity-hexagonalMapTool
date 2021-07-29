@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using TMPro;
 
 public enum HexLayoutType
 {
@@ -43,9 +44,12 @@ public class HexagonMapController : MonoBehaviour
     [SerializeField] private HexGridSettings _gridSettings;
 
     private HexCell[,] _mapCell;
-    public HexCell[,] HexCells => _mapCell;
+    private HexNode[,] _relationNodeMap;
     private HexCellDescriptor[,] _mapCellDescriptor;
+
+    public HexCell[,] HexCells => _mapCell;
     public HexCellDescriptor[,] MapCellDescriptor => _mapCellDescriptor;
+    public HexNode[,] HexCellRelationMap => _relationNodeMap;
 
     public int GridWidth => _gridSettings.hexWidth;
     public int GridHeight => _gridSettings.hexHeight;
@@ -142,7 +146,7 @@ public class HexagonMapController : MonoBehaviour
         return new HexPosition(row, column);
     }
 
-    private HexPosition[] GetNaibours(HexPosition hexPos)
+    private HexPosition[] GetNeighbors(HexPosition hexPos)
     {
         var leftCoordsX = hexPos.X - 1;
         var rightCoordsX = hexPos.X + 1;
@@ -179,8 +183,6 @@ public class HexagonMapController : MonoBehaviour
         return links;
     }
 
-
-
     #endregion
 
     #region ContexMenuFunc
@@ -196,15 +198,14 @@ public class HexagonMapController : MonoBehaviour
                 var xPos = i % 2 == 0
                     ? j - j * (_gridSettings.hexRadius - _gridSettings.smallSide)
                     : j - j * (_gridSettings.hexRadius - _gridSettings.smallSide) + _gridSettings.smallSide * 0.5f;
-                var yPos = i - i  * _gridSettings.hexRadius * 0.25f;
+                var yPos = i - i * _gridSettings.hexRadius * 0.25f;
                 var spawnHex = Instantiate(_hexCellPrefab, new Vector3(xPos, 0, yPos), Quaternion.identity);
                 spawnHex.name = $"hex x: {j}, y: {i} ";
                 spawnHex.transform.SetParent(_hexContainer);
-                _mapCell[i,j] = new HexCell(spawnHex.transform.position, spawnHex.transform);
+                var tmp = spawnHex.GetComponentInChildren<TextMeshPro>();
+                _mapCell[i, j] = new HexCell(spawnHex.transform.position, spawnHex.transform);
                 var IsObsticle = UnityEngine.Random.Range(0, 10) % 5 == 0;
-                //Debug.Log($"IsObsticle => {IsObsticle}");
-                _mapCellDescriptor[i,j] = new HexCellDescriptor(HexType.LAND, IsObsticle);
-
+                _mapCellDescriptor[i, j] = new HexCellDescriptor(HexType.LAND, IsObsticle, tmp);
             }
         }
 
@@ -213,6 +214,22 @@ public class HexagonMapController : MonoBehaviour
         var position = new Vector3(height / 2 - _gridSettings.smallSide / 2, 0, width / 2 - _gridSettings.hexRadius / 2);
         _plane.localScale = new Vector3(height, 0.1f, width);
         _plane.position = position;
+        // generate relation nodes
+        _relationNodeMap = new HexNode[_gridSettings.hexHeight, _gridSettings.hexWidth];
+        for (int i = 0; i < _gridSettings.hexHeight; i++)
+        {
+            for (int j = 0; j < _gridSettings.hexWidth; j++)
+            {
+                var hexCell = _mapCell[i,j];
+                var pos = new HexPosition(i, j);
+                var neighbors = GetNeighbors(pos);
+                _relationNodeMap[i, j] = new HexNode(pos, neighbors);
+            }
+        }
+        foreach (var item in _relationNodeMap)
+        {
+            Debug.Log(item);
+        }
     }
 
     [ContextMenu("RemoveGrid")]
@@ -224,10 +241,9 @@ public class HexagonMapController : MonoBehaviour
         }
         _plane.localScale = new Vector3(0, 0, 0);
         _plane.position = Vector3.zero;
-
     }
 
-    [ContextMenu("GetSmallSide")]
+    [ContextMenu("CalculateSmallSide")]
     private void GetSmallSide()
     {
         _gridSettings.smallSide = _gridSettings.hexRadius * Mathf.Sin(60 * Mathf.Deg2Rad);

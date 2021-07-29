@@ -1,5 +1,7 @@
 using System;
+using System.Text;
 using UnityEngine;
+using TMPro;
 
 public enum HexagonType
 {
@@ -44,6 +46,40 @@ public struct HexPosition
         _yIndex = y;
         _isInitialize = true;
     }
+
+    public static bool operator == (HexPosition c1, HexPosition c2)
+    {
+        return c1.Equals(c2);
+    }
+
+    public static bool operator != (HexPosition c1, HexPosition c2)
+    {
+        return !c1.Equals(c2);
+    }
+
+    public override bool Equals(object other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+        HexPosition objAsPart = (HexPosition)other;
+        return Equals(objAsPart);
+    }
+
+    public bool Equals(HexPosition other)
+    {
+        if (!_isInitialize || !other.IsInitialize)
+            return false;
+        if (_xIndex == other.X && _yIndex == other.Y)
+            return true;
+        return false;
+    }
+
+    public override string ToString()
+    {
+        return $"x: {_xIndex}; y: {_yIndex}; isInitialize: {_isInitialize}";
+    }
 }
 
 public struct HexCell
@@ -70,10 +106,13 @@ public struct HexCellDescriptor
     private HexType _hexType;
     public HexType HexType => _hexType;
 
-    public HexCellDescriptor(HexType hexType, bool obsticle)
+    public TextMeshPro TMP;
+
+    public HexCellDescriptor(HexType hexType, bool obsticle, TextMeshPro tmp)
     {
         _obsticle = obsticle;
         _hexType = hexType;
+        TMP = tmp;
     }
 }
 
@@ -85,9 +124,23 @@ public struct HexNode
     private HexPosition _node;
     public HexPosition Node => _node;
 
+    private float _distnce;
+    public float Distance => _distnce;
+
     public HexNode (HexPosition nodePose, HexPosition[] nodeLinks)
     {
         _node = nodePose;
         _links = nodeLinks;
+        _distnce = 1;
+    }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"pos -> x: {_node.X}; y: {_node.Y}");
+        sb.AppendLine($"links => count: {_links.Length}");
+        foreach (var link in _links)
+            sb.AppendLine($"link => x: {link.X}; y: {link.Y}; init: {link.IsInitialize}");
+        return sb.ToString();
     }
 }
